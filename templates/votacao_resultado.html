@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado da Votação</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='pesca_trade_show.jpg') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <button class="btn btn-danger w-100 mt-3" onclick="resetarVotacao()">Reiniciar Votação</button>
+
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { margin-top: 50px; max-width: 800px; }
+        .card { margin-bottom: 15px; }
+        .progress { height: 25px; }
+        .produto-img { width: 70px; height: 70px; border-radius: 5px; }
+        .navbar {
+            background-color: #007bff;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: rgb(255, 255, 255);
+        }
+        .nav-link {
+            color: white !important;
+        }
+        .card {
+            transition: 0.3s;
+        }
+        .card:hover {
+            transform: scale(1.05);
+        }
+        .container-nav { 
+            margin-top: 50px; margin-left: 350px; max-width: 900px; 
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-nav">
+            <a class="navbar-brand" href="/">Resultado de Votação</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="cadastro_produto">Novo Produto</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cadastro_cpf">Novo CPF</a></li>
+                    <li class="nav-item"><a class="nav-link" href="lista_produtos">Lista de Produtos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="lista_votantes">Lista de Votantes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="voto_categoria">Abrir Votação</a></li>
+                    <li class="nav-item"><a class="nav-link" href="votacao_resultado">Resultado</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container bg-white p-4 shadow rounded">
+        <h2 class="text-center text-primary mb-4">Resultado da Votação</h2>
+        <div id="resultados"></div>
+    </div>
+
+    <script>
+        function carregarResultados() {
+            fetch("/api/votacao_resultado")
+                .then(response => response.json())
+                .then(data => {
+                    const resultadosDiv = document.getElementById("resultados");
+                    resultadosDiv.innerHTML = "";
+
+                    for (const categoria in data) {
+                        resultadosDiv.innerHTML += `<h3 class="text-center text-primary mt-4">${categoria}</h3>`;
+                        data[categoria].forEach(produto => {
+                            resultadosDiv.innerHTML += `
+                                <div class="card p-3 shadow-sm">
+                                    <div class="d-flex align-items-center">
+                                        <img src="${produto.foto}" class="produto-img me-3">
+                                        <div class="w-100">
+                                            <h5>${produto.nome}</h5>
+                                            <p class="mb-2 text-secondary">Total de votos: <strong>${produto.votos}</strong></p>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                    style="width: ${produto.porcentagem}%" 
+                                                    aria-valuenow="${produto.votos}" aria-valuemin="0">
+                                                    ${produto.votos} votos (${produto.porcentagem}%)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                })
+                .catch(error => console.error("Erro ao carregar resultados:", error));
+        }
+
+        document.addEventListener("DOMContentLoaded", carregarResultados);
+
+        function resetarVotacao() {
+            if (confirm("Tem certeza que deseja reiniciar a votação? Todos os votos serão apagados!")) {
+                fetch("/resetar_votacao", { method: "POST" })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        location.reload(); // Atualiza a página para refletir os dados zerados
+                    })
+                    .catch(error => console.error("Erro ao resetar a votação:", error));
+            }
+        }
+    </script>
+
+</body>
+</html>

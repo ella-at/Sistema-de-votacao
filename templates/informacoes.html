@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informações dos Produtos</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='pesca_trade_show.jpg') }}">
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+            max-width: 900px;
+        }
+        .produto-card {
+            transition: 0.3s;
+        }
+        .produto-card:hover {
+            transform: scale(1.05);
+        }
+        .produto-img {
+            max-width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .navbar {
+            background-color: #007bff;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+        }
+        .nav-link {
+            color: white !important;
+        }
+        .card {
+            transition: 0.3s;
+        }
+        .card:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Votação Melhores do Ano</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="votacao">Voltar para Votação</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Lista de Produtos -->
+    <div class="container bg-white p-4 shadow rounded">
+        <h2 class="text-center text-primary mb-4">Informações dos Produtos</h2>
+        <div id="listaProdutos"></div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        async function carregarProdutos() {
+            try {
+                const response = await fetch("/lista_produtos_json"); // Obtém os dados do Flask
+                const produtos = await response.json();
+    
+                const listaProdutos = document.getElementById("listaProdutos");
+                listaProdutos.innerHTML = ""; // Limpa a lista antes de carregar os produtos
+    
+                let categoriaAtual = "";
+                produtos.forEach(produto => {
+                    if (produto.categoria !== categoriaAtual) {
+                        categoriaAtual = produto.categoria;
+                        listaProdutos.innerHTML += `<h3 class="mt-4">${categoriaAtual}</h3>`;
+                    }
+                    listaProdutos.innerHTML += `
+                        <div class="card produto-card mb-3">
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    <img src="${produto.imagem}" class="produto-img img-fluid" onerror="this.src='https://via.placeholder.com/200'">
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${produto.nome}</h5>
+                                        <p class="card-text"><strong>Marca:</strong> ${produto.marca}</p>
+                                        <p class="card-text"><strong>Categoria:</strong> ${produto.categoria}</p>
+                                        <p class="card-text"><strong>Expositor:</strong> ${produto.expositor}</p>
+                                        <p class="card-text"><strong>Valor:</strong> R$ ${produto.valor.toFixed(2)}</p>
+                                        <p class="card-text"><strong>Ficha Técnica:</strong> ${produto.ficha_tecnica}</p>
+                                        <button class="btn btn-primary" onclick="verDetalhes('${produto.nome}', '${produto.marca}', '${produto.expositor}', ${produto.valor}, '${produto.ficha_tecnica}')">Detalhes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar produtos:", error);
+                document.getElementById("listaProdutos").innerHTML = "<p class='text-danger'>Erro ao carregar produtos.</p>";
+            }
+        }
+    
+        function verDetalhes(nome, marca, expositor, valor, ficha_tecnica) {
+            alert(`Nome: ${nome}\nMarca: ${marca}\nExpositor: ${expositor}\nValor: R$ ${valor}\nFicha Técnica: ${ficha_tecnica}`);
+        }
+    
+        document.addEventListener("DOMContentLoaded", carregarProdutos);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

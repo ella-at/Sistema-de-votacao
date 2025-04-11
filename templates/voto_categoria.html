@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Votação por Categoria</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='pesca_trade_show.jpg') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { margin-top: 50px; }
+        .categoria-btn { width: 100%; text-align: left; }
+        .sem-voto { background-color: gray !important; }
+        .voto-realizado { background-color: green !important; color: white !important; }
+        .produto-card { transition: 0.3s; cursor: pointer; text-align: center; }
+        .produto-card:hover { transform: scale(1.05); }
+        .produto-img { max-width: 100%; height: 180px; object-fit: cover; border-radius: 5px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container bg-white p-4 shadow rounded">
+        <h2 class="text-center text-primary mb-4">Validação de CPF</h2>
+        <form id="cpfForm">
+            <div class="mb-3">
+                <label class="form-label">Digite seu CPF:</label>
+                <input type="text" id="cpfInput" class="form-control" placeholder="Ex: 123.456.789-00" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Validar CPF</button>
+        </form>
+        <div id="erroCPF" class="text-danger mt-3 hidden"></div>
+    </div>
+
+    <div id="votacaoArea" class="container bg-white p-4 shadow rounded mt-4 hidden">
+        <h2 class="text-center text-primary mb-4">Votação por Categoria</h2>
+        <input 
+        type="text" 
+        id="searchInput" 
+        class="form-control" 
+        placeholder="🔍 Pesquise por nome do produto..."
+        >
+        <div id="listaCategorias"></div>
+        <button id="confirmarVotos" class="btn btn-success w-100 mt-3 hidden" onclick="confirmarTodosVotos()">Confirmar Todos os Votos</button>
+    </div>
+
+    <script>
+        $(document).ready(function(){
+            $('#cpfInput').mask('000.000.000-00');
+        });
+
+        let cpfAtual = "";
+        let votos = {};
+        let categorias = [];
+        function filtrarCategoriasPorNome(produtos, termo) {
+            termo = termo.trim().toLowerCase();
+            if (!termo) return produtos;
+        
+            return produtos.filter(prod => prod.nome.toLowerCase().includes(termo));
+        }
+        
+
+        document.getElementById("cpfForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            cpfAtual = document.getElementById("cpfInput").value.trim();
+
+            fetch("/votacao", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ cpf: cpfAtual })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.cpf_valido) {
+                    document.getElementById("erroCPF").classList.add("hidden");
+                    document.getElementById("votacaoArea").classList.remove("hidden");
+                    carregarCategorias(data.produtos);
+                    document.getElementById("searchInput").value = "";
+
+                } else {
+                    document.getElementById("erroCPF").textContent = data.error;
+                    document.getElementById("erroCPF").classList.remove("hidden");
+                }
+            });
+        });
+
+        function carregarCategorias(produtos) {
+            const listaCategorias = document.getElementById("listaCategorias");
+            listaCategorias.innerHTML = "";
+            categorias = [...new Set(produtos.map(prod => prod.categoria))].sort();
+            categorias.forEach(categoria => {
+                votos[categoria] = null;
+                listaCategorias.innerHTML += `
+                    <button class="btn btn-secondary categoria-btn sem-voto mb-2" onclick="abrirCategoria('${categoria}')" id="btn-${categoria}">
+                        ${categoria} - <span>Sem Voto</span>
+                    </button>
+                    <div id="produtos-${categoria}" class="hidden"></div>
+                `;
+            });
+        }
+
+        function abrirCategoria(categoria) {
+            fetch(`/produtos_por_categoria?categoria=${encodeURIComponent(categoria)}`)
+            .then(response => response.json())
+            .then(produtos => {
+                produtos.sort((a, b) => a.nome.localeCompare(b.nome));
+                const divProdutos = document.getElementById(`produtos-${categoria}`);
+                divProdutos.innerHTML = "<h4 class='text-center mt-3'>Selecione um produto:</h4><div class='row'>";
+                produtos.forEach(produto => {
+                    divProdutos.innerHTML += `
+                        <div class="col-md-4">
+                            <div class="card produto-card p-2 mb-2">
+                                <img src="${produto.foto}" class="produto-img card-img-top" alt="${produto.nome}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${produto.nome}</h5>
+                                    <button class="btn btn-outline-success w-100" onclick="selecionarProduto('${categoria}', ${produto.id}, '${produto.nome}')">Selecionar</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                divProdutos.innerHTML += "</div>";
+                divProdutos.classList.toggle("hidden");
+            });
+        }
+
+        function selecionarProduto(categoria, produtoId, produtoNome) {
+            votos[categoria] = produtoId;
+            document.getElementById(`btn-${categoria}`).classList.remove("sem-voto");
+            document.getElementById(`btn-${categoria}`).classList.add("voto-realizado");
+            document.getElementById(`btn-${categoria}`).innerHTML = `${categoria} - <span>Voto Realizado (${produtoNome})</span>`;
+            document.getElementById(`produtos-${categoria}`).classList.add("hidden");
+            verificarVotosCompletos();
+        }
+
+        function verificarVotosCompletos() {
+            const todasVotadas = Object.values(votos).every(voto => voto !== null);
+            document.getElementById("confirmarVotos").classList.toggle("hidden", !todasVotadas);
+        }
+
+        function confirmarTodosVotos() {
+            console.log("Enviando votos...", votos);
+        
+            fetch("/confirmar_voto_categoria", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ cpf: cpfAtual, votos: votos })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Resposta do servidor:", data);
+                if (data.message) {
+                    alert("Todos os votos foram confirmados com sucesso!");
+                    location.reload();
+                } else {
+                    alert("Erro ao registrar os votos: " + data.error);
+                }
+            })
+            .catch(error => {
+                console.error("Erro na requisição:", error);
+                alert("Erro na conexão com o servidor.");
+            });
+        }
+
+        document.getElementById("searchInput").addEventListener("input", function() {
+            fetch("/votacao", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ cpf: cpfAtual })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.cpf_valido) {
+                    const filtrados = filtrarCategoriasPorNome(data.produtos, this.value);
+                    carregarCategorias(filtrados);
+                }
+            });
+        });
+        
+        
+    </script>
+</body>
+</html>

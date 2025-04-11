@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Apresentação do Vencedor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='pesca_trade_show.jpg') }}">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      background: linear-gradient(to right, #f0f8ff, #ffffff);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .categoria-fixa {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #007bff;
+      margin-bottom: 50px;
+      display: none;
+      opacity: 0;
+      transition: all 1s ease;
+    }
+
+    .categoria-fixa.show {
+      display: block;
+      opacity: 1;
+    }
+
+    .categoria-destaque {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #007bff;
+      margin-top: 80px;
+      opacity: 0;
+      transform: scale(0.9);
+      animation: revealCategoria 1s forwards;
+    }
+
+    @keyframes revealCategoria {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .revelacao {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      margin-top: 30px;
+    }
+
+    .foto-produto {
+      max-width: 400px;
+      max-height: 500px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      padding: 10px;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .info-produto {
+      text-align: left;
+      max-width: 500px;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .info-produto h1 {
+      font-size: 2.8rem;
+      color: #333;
+    }
+
+    .info-produto h3 {
+      font-size: 1.8rem;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    .info-produto .votos {
+      font-size: 1.6rem;
+      color: #28a745;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    .show {
+      opacity: 1 !important;
+    }
+
+    @media (max-width: 768px) {
+      .revelacao {
+        flex-direction: column;
+        text-align: center;
+      }
+      .info-produto {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="categoriaFixa" class="categoria-fixa"></div>
+  <div id="categoriaDestaque" class="categoria-destaque"></div>
+
+  <div class="revelacao">
+    <img id="foto" class="foto-produto" src="" alt="Imagem do produto">
+
+    <div id="info" class="info-produto">
+      <h1 id="nome"></h1>
+      <h3 id="marca"></h3>
+      <div id="votos" class="votos"></div>
+    </div>
+  </div>
+
+  <script>
+    function lançarConfetes() {
+      const duration = 3 * 1000;
+      const end = Date.now() + duration;
+      (function frame() {
+        confetti({
+          particleCount: 4,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
+        });
+        confetti({
+          particleCount: 4,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        });
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+    }
+
+    function apresentarCategoria(categoria) {
+      const catDestaque = document.getElementById("categoriaDestaque");
+      const catFixa = document.getElementById("categoriaFixa");
+      const nome = document.getElementById("nome");
+      const marca = document.getElementById("marca");
+      const votos = document.getElementById("votos");
+      const foto = document.getElementById("foto");
+      const info = document.getElementById("info");
+
+      // Reset
+      catDestaque.textContent = categoria;
+      catDestaque.style.display = "block";
+      catFixa.classList.remove("show");
+      nome.classList.remove("show");
+      marca.classList.remove("show");
+      votos.classList.remove("show");
+      foto.classList.remove("show");
+      info.classList.remove("show");
+
+      // Animação de categoria
+      catDestaque.classList.remove("categoria-destaque");
+      void catDestaque.offsetWidth;
+      catDestaque.classList.add("categoria-destaque");
+
+      setTimeout(() => {
+        catDestaque.style.display = "none";
+        catFixa.textContent = categoria;
+        catFixa.classList.add("show");
+
+        fetch(`/api/vencedor_categoria?categoria=${encodeURIComponent(categoria)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) {
+              nome.textContent = "Erro ao carregar";
+              return;
+            }
+
+            nome.textContent = data.nome;
+            marca.textContent = `Marca: ${data.marca || 'N/A'}`;
+            votos.textContent = `${data.votos} voto${data.votos != 1 ? 's' : ''}`;
+            foto.src = data.foto;
+            foto.alt = `Foto de ${data.nome}`;
+
+            nome.classList.add("show");
+            marca.classList.add("show");
+            votos.classList.add("show");
+            foto.classList.add("show");
+            info.classList.add("show");
+
+            lançarConfetes();
+          });
+      }, 3000);
+    }
+
+    // Recebe categoria via postMessage
+    window.addEventListener("message", function (event) {
+      if (event.data && event.data.categoria) {
+        apresentarCategoria(event.data.categoria);
+      }
+    }, false);
+
+    // Inicial via URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const categoriaInicial = urlParams.get("categoria");
+    if (categoriaInicial) {
+      apresentarCategoria(categoriaInicial);
+    }
+  </script>
+
+</body>
+</html>
