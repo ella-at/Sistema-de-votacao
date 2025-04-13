@@ -304,6 +304,20 @@ def upload_cpfs():
 def arquivo_produto():
     return render_template("arquivo_produto.html")
 
+# Função para exclusão geral de produtos
+@app.route("/apagar_todos_produtos", methods=["POST"])
+def apagar_todos_produtos():
+    with sqlite3.connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        # Exclui votos relacionados primeiro (por integridade)
+        cursor.execute("DELETE FROM votos")
+        cursor.execute("UPDATE votantes SET votou = 0, voto_produto = NULL")  # limpa referência
+        cursor.execute("DELETE FROM produtos")
+        conn.commit()
+    return jsonify({"message": "Todos os produtos foram apagados com sucesso!"})
+
+
+
 # Rota para processar o upload
 @app.route("/upload_produtos", methods=["POST"])
 def upload_produtos():

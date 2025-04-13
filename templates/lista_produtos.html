@@ -74,11 +74,35 @@
     <!-- Lista de Produtos -->
     <div class="container bg-white p-4 shadow rounded">
         <h2 class="text-center text-primary mb-4">Lista de Produtos</h2>
+        <div class="text-end mb-3">
+            <button class="btn btn-danger" onclick="apagarTodosProdutos()">Apagar Todos os Produtos</button>
+        </div>
+        
         <div id="listaProdutos"></div>
     </div>
 
     <!-- Script -->
     <script>
+
+        function apagarTodosProdutos() {
+            if (!confirm("Tem certeza que deseja apagar TODOS os produtos? Essa ação é irreversível!")) return;
+        
+            fetch("/apagar_todos_produtos", {
+                method: "POST"
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                carregarProdutos(); // Atualiza a lista
+            })
+            .catch(error => {
+                console.error("Erro ao apagar todos os produtos:", error);
+                alert("Erro ao apagar todos os produtos.");
+            });
+        }
+
+        
+
         async function carregarProdutos() {
             try {
                 const response = await fetch("/lista_produtos_json"); // Obtém os dados do Flask
