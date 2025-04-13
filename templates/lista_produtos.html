@@ -89,11 +89,12 @@
               </select>
             </div>
           </div>
+          
           <div class="text-end mb-3">
             <button class="btn btn-secondary me-2" onclick="limparFiltros()">Limpar Filtros</button>
+            <button class="btn btn-success me-2" onclick="exportarProdutos()">Exportar Produtos Filtrados</button>
             <button class="btn btn-danger" onclick="apagarTodosProdutos()">Apagar Todos os Produtos</button>
           </div>
-          
           
     
         
@@ -102,6 +103,50 @@
 
     <!-- Script -->
     <script>
+
+
+        function exportarProdutos() {
+            const linhas = [["Nome", "Marca", "Categoria", "Valor", "Expositor", "Ficha Técnica"]];
+          
+            const cardsVisiveis = document.querySelectorAll(".categoria-bloco .card:not([style*='display: none'])");
+          
+            if (cardsVisiveis.length === 0) {
+              alert("Nenhum produto visível para exportar.");
+              return;
+            }
+          
+            cardsVisiveis.forEach(card => {
+              const nome = card.querySelector(".card-title")?.textContent.trim() || "";
+              const marca = card.querySelector(".card-text:nth-of-type(1)")?.textContent.replace("Marca:", "").trim() || "";
+              const categoria = card.querySelector(".card-text:nth-of-type(2)")?.textContent.replace("Categoria:", "").trim() || "";
+          
+              // Extras do botão "detalhes" via atributo data (ou use dataset no futuro)
+              const detalhes = card.querySelector("button.btn-primary")?.getAttribute("onclick") || "";
+              const partes = detalhes.match(/'(.*?)'/g)?.map(p => p.replace(/'/g, "")) || [];
+              const expositor = partes[2] || "";
+              const valor = partes[3] || "";
+              const ficha = partes[4] || "";
+          
+              linhas.push([nome, marca, categoria, valor, expositor, ficha]);
+            });
+          
+            const csvContent = linhas.map(l => l.join(",")).join("\n");
+          
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+          
+            link.setAttribute("href", url);
+            link.setAttribute("download", "produtos_filtrados.csv");
+            link.style.display = "none";
+          
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+          
+
+        
         function limparFiltros() {
             document.getElementById("filtroNome").value = "";
             document.getElementById("filtroMarca").value = "";
