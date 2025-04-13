@@ -236,6 +236,16 @@ def validar_cpf(cpf):
     cpf = "".join(filter(str.isdigit, cpf))  # Remove caracteres não numéricos
     return len(cpf) == 11 and not cpf.count(cpf[0]) == 11  # Evita CPFs inválidos
 
+#Função para excluir todos os cpfs
+@app.route("/apagar_todos_cpfs", methods=["POST"])
+def apagar_todos_cpfs():
+    with sqlite3.connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM votos")      # Remove os votos primeiro
+        cursor.execute("DELETE FROM votantes")   # Remove todos os CPFs
+        conn.commit()
+    return jsonify({"message": "Todos os CPFs e votos foram apagados com sucesso!"})
+
 
 # Rota para processar o upload
 @app.route("/upload_cpfs", methods=["POST"])

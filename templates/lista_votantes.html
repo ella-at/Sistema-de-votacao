@@ -49,6 +49,13 @@
             </div>
         </div>
         
+        <!-- botão de exclusão geral de cpfs-->
+        <div class="row mb-3">
+            <div class="col text-end">
+                <button class="btn btn-danger" onclick="apagarTodosCPFs()">Apagar Todos os CPFs</button>
+            </div>
+        </div>
+        
 
         <!-- Filtro -->
         <div class="mb-3">
@@ -93,6 +100,22 @@
 
     <!-- Script -->
     <script>
+
+        function apagarTodosCPFs() {
+            if (!confirm("Tem certeza que deseja apagar TODOS os CPFs? Essa ação é irreversível!")) return;
+        
+            fetch("/apagar_todos_cpfs", {
+                method: "POST"
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(error => console.error("Erro ao apagar todos os CPFs:", error));
+        }
+        
+
         function apagarCPF(cpf) {
             if (!confirm(`Tem certeza que deseja apagar o CPF ${cpf}? Essa ação não pode ser desfeita!`)) {
                 return;
