@@ -74,6 +74,23 @@
     <!-- Lista de Produtos -->
     <div class="container bg-white p-4 shadow rounded">
         <h2 class="text-center text-primary mb-4">Lista de Produtos</h2>
+        <div class="row mb-4">
+            <div class="col-md-4">
+              <input type="text" class="form-control" id="filtroNome" placeholder="Filtrar por nome">
+            </div>
+            <div class="col-md-4">
+              <select id="filtroMarca" class="form-select">
+                <option value="">Todas as Marcas</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <select id="filtroCategoria" class="form-select">
+                <option value="">Todas as Categorias</option>
+              </select>
+            </div>
+          </div>
+          
+          
         <div class="text-end mb-3">
             <button class="btn btn-danger" onclick="apagarTodosProdutos()">Apagar Todos os Produtos</button>
         </div>
@@ -110,32 +127,77 @@
     
                 const listaProdutos = document.getElementById("listaProdutos");
                 listaProdutos.innerHTML = ""; // Limpa a lista antes de carregar os produtos
-    
-                let categoriaAtual = "";
+
+                // Coletar marcas e categorias únicas
+                const categorias = new Set();
+                const marcas = new Set();
+
                 produtos.forEach(produto => {
-                    if (produto.categoria !== categoriaAtual) {
-                        categoriaAtual = produto.categoria;
-                        listaProdutos.innerHTML += `<h3 class="mt-4">${categoriaAtual}</h3>`;
-                    }
-                    listaProdutos.innerHTML += `
-                        <div class="card produto-card mb-3">
-                            <div class="row g-0">
-                                <div class="col-md-4">
-                                    <img src="${produto.imagem}" class="produto-img img-fluid" onerror="this.src='https://via.placeholder.com/200'">
-                                </div>
-                                <div class="col-md-8">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${produto.nome}</h5>
-                                        <p class="card-text"><strong>Marca:</strong> ${produto.marca}</p>
-                                        <p class="card-text"><strong>Categoria:</strong> ${produto.categoria}</p>
-                                        <button class="btn btn-primary" onclick="verDetalhes('${produto.nome}', '${produto.marca}', '${produto.expositor}', ${produto.valor}, '${produto.ficha_tecnica}')">Detalhes</button>
-                                        <button class="btn btn-danger" onclick="excluirProduto(${produto.id})">Excluir</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                categorias.add(produto.categoria);
+                marcas.add(produto.marca);
                 });
+
+                // Preencher o select de categoria
+                const selectCategoria = document.getElementById("filtroCategoria");
+                selectCategoria.innerHTML = `<option value="">Todas as Categorias</option>`;
+                [...categorias].sort().forEach(cat => {
+                const option = document.createElement("option");
+                option.value = cat;
+                option.textContent = cat;
+                selectCategoria.appendChild(option);
+                });
+
+                // Preencher o select de marca
+                const selectMarca = document.getElementById("filtroMarca");
+                selectMarca.innerHTML = `<option value="">Todas as Marcas</option>`;
+                [...marcas].sort().forEach(marca => {
+                const option = document.createElement("option");
+                option.value = marca;
+                option.textContent = marca;
+                selectMarca.appendChild(option);
+                });
+
+
+
+
+                
+                let categoriaAtual = "";
+                let categoriaContainer = null;
+
+                produtos.forEach(produto => {
+                if (produto.categoria !== categoriaAtual) {
+                    categoriaAtual = produto.categoria;
+
+                    categoriaContainer = document.createElement("div");
+                    categoriaContainer.className = "categoria-bloco mb-4";
+                    categoriaContainer.setAttribute("data-categoria", categoriaAtual);
+
+                    categoriaContainer.innerHTML = `<h3 class="mt-4 categoria-titulo">${categoriaAtual}</h3>`;
+                    listaProdutos.appendChild(categoriaContainer);
+                }
+
+                const card = document.createElement("div");
+                card.className = "card produto-card mb-3";
+                card.innerHTML = `
+                    <div class="row g-0">
+                    <div class="col-md-4">
+                        <img src="${produto.imagem}" class="produto-img img-fluid" onerror="this.src='https://via.placeholder.com/200'">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                        <h5 class="card-title">${produto.nome}</h5>
+                        <p class="card-text"><strong>Marca:</strong> ${produto.marca}</p>
+                        <p class="card-text"><strong>Categoria:</strong> ${produto.categoria}</p>
+                        <button class="btn btn-primary" onclick="verDetalhes('${produto.nome}', '${produto.marca}', '${produto.expositor}', ${produto.valor}, '${produto.ficha_tecnica}')">Detalhes</button>
+                        <button class="btn btn-danger" onclick="excluirProduto(${produto.id})">Excluir</button>
+                        </div>
+                    </div>
+                    </div>
+                `;
+                categoriaContainer.appendChild(card);
+                });
+                
+
             } catch (error) {
                 console.error("Erro ao carregar produtos:", error);
                 document.getElementById("listaProdutos").innerHTML = "<p class='text-danger'>Erro ao carregar produtos.</p>";
@@ -162,6 +224,45 @@
         }
     
         document.addEventListener("DOMContentLoaded", carregarProdutos);
+        
+        // Filtra os cards ao digitar nos campos
+        ["filtroNome", "filtroMarca", "filtroCategoria"].forEach(id => {
+            document.getElementById(id).addEventListener("input", aplicarFiltros);
+            document.getElementById(id).addEventListener("change", aplicarFiltros);
+          });
+          
+          function aplicarFiltros() {
+            const nomeFiltro = document.getElementById("filtroNome").value.toLowerCase();
+            const marcaFiltro = document.getElementById("filtroMarca").value.toLowerCase();
+            const categoriaFiltro = document.getElementById("filtroCategoria").value.toLowerCase();
+          
+            const cards = document.querySelectorAll("#listaProdutos .card");
+          
+            cards.forEach(card => {
+              const texto = card.innerText.toLowerCase();
+              const exibir =
+                texto.includes(nomeFiltro) &&
+                texto.includes(marcaFiltro) &&
+                texto.includes(categoriaFiltro);
+          
+              card.style.display = exibir ? "" : "none";
+            });
+            // Esconde blocos de categorias que não possuem produtos visíveis
+            const blocosCategoria = document.querySelectorAll(".categoria-bloco");
+
+            blocosCategoria.forEach(bloco => {
+            const produtosVisiveis = bloco.querySelectorAll(".card:not([style*='display: none'])");
+
+            if (produtosVisiveis.length === 0) {
+                bloco.style.display = "none";
+            } else {
+                bloco.style.display = "";
+            }
+            });
+
+          }
+          
+  
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
