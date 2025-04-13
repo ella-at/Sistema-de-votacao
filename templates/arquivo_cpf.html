@@ -11,14 +11,31 @@
         body { background-color: #f8f9fa; }
         .container { margin-top: 50px; max-width: 600px; }
         .alert { display: none; }
+        .navbar { background-color: #007bff; }
+        .navbar-brand { font-size: 1.5rem; font-weight: bold; color: white; }
+        .nav-link { color: white !important; }
+        .container-nav { margin-top: 50px; margin-left: 450px; max-width: 900px; }
     </style>
 </head>
 <body>
 
 <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-nav">
         <a class="navbar-brand" href="/">Sistema de Votação</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="cadastro_produto">Novo Produto</a></li>
+                <li class="nav-item"><a class="nav-link" href="cadastro_cpf">Novo CPF</a></li>
+                <li class="nav-item"><a class="nav-link" href="lista_produtos">Lista de Produtos</a></li>
+                <li class="nav-item"><a class="nav-link active" href="lista_votantes">Lista de Votantes</a></li>
+                <li class="nav-item"><a class="nav-link" href="votacao">Abrir Votação</a></li>
+                <li class="nav-item"><a class="nav-link" href="resultado_votacao">Resultado</a></li>
+            </ul>
+        </div>
     </div>
 </nav>
 
