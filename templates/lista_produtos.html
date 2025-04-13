@@ -89,17 +89,26 @@
               </select>
             </div>
           </div>
-          
-          
-        <div class="text-end mb-3">
+          <div class="text-end mb-3">
+            <button class="btn btn-secondary me-2" onclick="limparFiltros()">Limpar Filtros</button>
             <button class="btn btn-danger" onclick="apagarTodosProdutos()">Apagar Todos os Produtos</button>
-        </div>
+          </div>
+          
+          
+    
         
         <div id="listaProdutos"></div>
     </div>
 
     <!-- Script -->
     <script>
+        function limparFiltros() {
+            document.getElementById("filtroNome").value = "";
+            document.getElementById("filtroMarca").value = "";
+            document.getElementById("filtroCategoria").value = "";
+            aplicarFiltros();
+          }
+          
 
         function apagarTodosProdutos() {
             if (!confirm("Tem certeza que deseja apagar TODOS os produtos? Essa ação é irreversível!")) return;
